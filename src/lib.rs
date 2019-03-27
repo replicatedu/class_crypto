@@ -91,13 +91,22 @@ impl ClassCrypto {
     }
 
 	pub fn decrypt(&self, ciphertext: &str, sender_pk_str: String) -> Result<Vec<u8>,()> {
-        let sender_pk = box_::PublicKey(pk_convert(&hex::decode(sender_pk_str).unwrap()));
+        let sender_pk_hex = match hex::decode(&sender_pk_str){
+            Err(e) => return Err(()),
+            Ok(f) => f
+        }; 
+        
+        let sender_pk = box_::PublicKey(pk_convert(&sender_pk_hex));
         
         let decoded_ciphertext = hex::decode(ciphertext).unwrap();
         let nonce = &decoded_ciphertext[0..NONCEBYTES];
         let ciphertext = &decoded_ciphertext[NONCEBYTES..];
 
-        box_::open(&ciphertext, &Nonce(nonce_convert(nonce)), &sender_pk, &self.sk)
+        let plaintext = match box_::open(&ciphertext, &Nonce(nonce_convert(nonce)), &sender_pk, &self.sk){
+            Err(e) => return Err(()),
+            Ok(f) => f
+        }; 
+        Ok(plaintext)
     }
 
 }
@@ -125,20 +134,6 @@ impl fmt::Display for ClassCrypto {
         }
     }
 }
-
-// pub fn gen_keypair()->(String, String){
-// 	let (ourpk, oursk) = box_::gen_keypair();
-// 	//dbg!(hex::encode(&ourpk));
-// 	//println!("{}",hex::encode(&oursk[..]));
-// 	let ret_str = String::from(hex::encode(oursk[..]).clone());
-// 	(hex::encode(ourpk), ret_str)
-// }
-
-// pub fn load_keypair(sk: &str)-> box_::SecretKey {
-
-// }
-
-//pub fn 
 
 #[cfg(test)]
 mod tests {
@@ -211,9 +206,10 @@ mod tests {
         let msg = "i hate girls lacrosse";
 
         let cipher = a.encrypt(msg, m.return_pk());
-        let recv = h.decrypt(&cipher, a.return_pk()).unwrap();
-        dbg!(str::from_utf8(&recv).unwrap());
-        //assert!(msg == recv);
+        let recv = match h.decrypt(&cipher, a.return_pk()){
+            Err(e) => assert!(true),
+            Ok(f) => assert!(false, "this should have failed")
+        };
     }
 
 }
