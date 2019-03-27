@@ -4,18 +4,19 @@ use term_painter::Color::*;
 use term_painter::ToStyle;
 
 use sodiumoxide::crypto::box_;
-use sodiumoxide::crypto::box_::curve25519xsalsa20poly1305::NONCEBYTES;
+use sodiumoxide::crypto::box_::curve25519xsalsa20poly1305::{PUBLICKEYBYTES,NONCEBYTES};//,SECRETKEYBYTES};
 use sodiumoxide::crypto::box_::curve25519xsalsa20poly1305::Nonce;
 
-//TODO find the constant linked to 32
-pub fn pk_convert(pk: &[u8]) -> [u8; 32] {
-    let mut array = [0u8; 32];
+//convert variable PublicKey u8 array reference into a constant sized array
+pub fn pk_convert(pk: &[u8]) -> [u8; PUBLICKEYBYTES] {
+    let mut array = [0u8; PUBLICKEYBYTES];
     for (&x, p) in pk.iter().zip(array.iter_mut()) {
         *p = x;
     }
     array
 }
 
+//convert variable Nonce u8 array reference into a constant sized array
 pub fn nonce_convert(pk: &[u8]) -> [u8; NONCEBYTES] {
     let mut array = [0u8; NONCEBYTES];
     for (&x, p) in pk.iter().zip(array.iter_mut()) {
@@ -82,9 +83,7 @@ impl ClassCrypto {
         
         let mut enc_nonce = hex::encode(nonce);
         let enc_ciphertext = hex::encode(&ciphertext);
-        //dbg!(enc_nonce.len());
-        //dbg!(&enc_ciphertext);
-
+      
         //prepends nones onto string to send as the message
         enc_nonce.push_str(&enc_ciphertext);
         enc_nonce
@@ -92,18 +91,20 @@ impl ClassCrypto {
 
 	pub fn decrypt(&self, ciphertext: &str, sender_pk_str: String) -> Result<Vec<u8>,()> {
         let sender_pk_hex = match hex::decode(&sender_pk_str){
-            Err(e) => return Err(()),
+            Err(_) => return Err(()),
             Ok(f) => f
         }; 
         
         let sender_pk = box_::PublicKey(pk_convert(&sender_pk_hex));
         
         let decoded_ciphertext = hex::decode(ciphertext).unwrap();
+        
+        //seperate the nonce and the ciphertext
         let nonce = &decoded_ciphertext[0..NONCEBYTES];
         let ciphertext = &decoded_ciphertext[NONCEBYTES..];
 
         let plaintext = match box_::open(&ciphertext, &Nonce(nonce_convert(nonce)), &sender_pk, &self.sk){
-            Err(e) => return Err(()),
+            Err(_) => return Err(()),
             Ok(f) => f
         }; 
         Ok(plaintext)
