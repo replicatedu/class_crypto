@@ -158,7 +158,7 @@ mod tests {
     #[test]
     fn gen_keys() {
         //simple test to ensure keys are generated properly
-        let a = ClassCrypto::new("alex", true);
+        let _a = ClassCrypto::new("alex", true);
     }
     #[test]
     fn test_gen_from_hex_keys() {
@@ -207,9 +207,9 @@ mod tests {
         let msg = "i hate girls lacrosse";
 
         let cipher = a.encrypt(msg, m.return_pk());
-        let recv = match h.decrypt(&cipher, a.return_pk()){
-            Err(e) => assert!(true),
-            Ok(f) => assert!(false, "this should have failed")
+        let _recv = match h.decrypt(&cipher, a.return_pk()){
+            Err(_e) => assert!(true),
+            Ok(_f) => assert!(false, "this should have failed")
         };
     }
 
