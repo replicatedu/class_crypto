@@ -90,15 +90,14 @@ impl ClassCrypto {
         enc_nonce
     }
 
-	pub fn decrypt(&self, ciphertext: &str, sender_pk_str: String) -> Result<Vec<u8>,String> {
+	pub fn decrypt(&self, ciphertext: &str, sender_pk_str: String) -> Result<Vec<u8>,()> {
         let sender_pk = box_::PublicKey(pk_convert(&hex::decode(sender_pk_str).unwrap()));
         
         let decoded_ciphertext = hex::decode(ciphertext).unwrap();
         let nonce = &decoded_ciphertext[0..NONCEBYTES];
         let ciphertext = &decoded_ciphertext[NONCEBYTES..];
 
-        let plain = box_::open(&ciphertext, &Nonce(nonce_convert(nonce)), &sender_pk, &self.sk).unwrap();
-        Ok(plain)
+        box_::open(&ciphertext, &Nonce(nonce_convert(nonce)), &sender_pk, &self.sk)
     }
 
 }
@@ -187,4 +186,34 @@ mod tests {
         dbg!(str::from_utf8(&recv).unwrap());
         //assert!(msg == recv);
     }
+    #[test]
+    fn test_encrypt_message_to_self() {
+        //test to see if same key pair can be regenerated from ascii hex
+        let a = ClassCrypto::new("alex", true);
+    	let m = ClassCrypto::new_from_sk("megan", a.return_sk(), false).unwrap();
+        println!("{}",a);
+        println!("{}",m);
+        let msg = "i hate girls lacrosse";
+
+        let cipher = a.encrypt(msg, m.return_pk());
+        let recv = m.decrypt(&cipher, a.return_pk()).unwrap();
+        dbg!(str::from_utf8(&recv).unwrap());
+        //assert!(msg == recv);
+    }
+    #[test]
+    fn test_fail_decrypt() {
+        //test to see if same key pair can be regenerated from ascii hex
+        let a = ClassCrypto::new("alex", true);
+    	let m = ClassCrypto::new_from_sk("megan", a.return_sk(), false).unwrap();
+        let h = ClassCrypto::new("hallie", true);
+        println!("{}",a);
+        println!("{}",m);
+        let msg = "i hate girls lacrosse";
+
+        let cipher = a.encrypt(msg, m.return_pk());
+        let recv = h.decrypt(&cipher, a.return_pk()).unwrap();
+        dbg!(str::from_utf8(&recv).unwrap());
+        //assert!(msg == recv);
+    }
+
 }
