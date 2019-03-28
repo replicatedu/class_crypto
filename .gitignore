@@ -4,3 +4,4 @@ Cargo.lock
 example_cli/target
 example_cli/**/*.rs.bk
 example_cli/Cargo.lock
+*.tmp
