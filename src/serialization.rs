@@ -46,7 +46,7 @@ mod tests {
             port: None,
             keys: Keys {
                 github: "xxxxxxxxxxxxxxxxx".to_string(),
-                travis: Some("yyyyyyyyyyyyyyyyy".to_string()),
+                travis: None("yyyyyyyyyyyyyyyyy".to_string()),
             },
         };
 
