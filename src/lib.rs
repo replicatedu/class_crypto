@@ -9,6 +9,7 @@ use sodiumoxide::crypto::box_::curve25519xsalsa20poly1305::Nonce;
 
 #[macro_use]
 extern crate serde_derive;
+extern crate toml;
 
 pub mod serialization;
 
