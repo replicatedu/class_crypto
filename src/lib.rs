@@ -12,6 +12,7 @@ extern crate serde_derive;
 extern crate toml;
 
 pub mod serialization;
+use serialization::{Class,Instructors,Students, Participant};
 
 //convert variable PublicKey u8 array reference into a constant sized array
 pub fn pk_convert(pk: &[u8]) -> [u8; PUBLICKEYBYTES] {
@@ -29,6 +30,32 @@ pub fn nonce_convert(pk: &[u8]) -> [u8; NONCEBYTES] {
         *p = x;
     }
     array
+}
+
+pub fn convert_student_to_serializable(student: &ClassCrypto) -> Students{
+    let student = Students {
+        id: student.id.to_string(),
+        pk: student.return_pk(),
+    };
+    student
+}
+
+pub fn convert_instructor_to_serializable(instructor: &ClassCrypto) -> Instructors{
+    let instructor = Instructors {
+        id: instructor.id.to_string(),
+        pk: instructor.return_pk(),
+    };
+    instructor
+}
+
+pub fn convert_me_to_serializable(me: &ClassCrypto) -> Participant{
+    let me = Participant {
+        id: me.id.to_string(),
+        pk: me.return_pk(),
+        sk: me.return_sk(),
+        instructor: me.instructor
+    };
+    me
 }
 
 //holds data for instructor and students
@@ -179,8 +206,8 @@ mod tests {
         //test to see if same key pair can be regenerated from ascii hex
         let a = ClassCrypto::new("alex", true);
     	let m = ClassCrypto::new("megan", false);
-        println!("{}",a);
-        println!("{}",m);
+        //println!("{}",a);
+        //println!("{}",m);
         let msg = "i hate girls lacrosse";
 
         let cipher = a.encrypt(msg.as_bytes().to_vec(), m.return_pk());
@@ -193,8 +220,8 @@ mod tests {
         //test to see if same key pair can be regenerated from ascii hex
         let a = ClassCrypto::new("alex", true);
     	let m = ClassCrypto::new_from_sk("megan", a.return_sk(), false).unwrap();
-        println!("{}",a);
-        println!("{}",m);
+        //println!("{}",a);
+        //println!("{}",m);
         let msg = "i hate girls lacrosse";
 
         let cipher = a.encrypt(msg.as_bytes().to_vec(), m.return_pk());
@@ -208,8 +235,8 @@ mod tests {
         let a = ClassCrypto::new("alex", true);
     	let m = ClassCrypto::new_from_sk("megan", a.return_sk(), false).unwrap();
         let h = ClassCrypto::new("hallie", true);
-        println!("{}",a);
-        println!("{}",m);
+        //println!("{}",a);
+        //println!("{}",m);
         let msg = "i hate girls lacrosse";
 
         let cipher = a.encrypt(msg.as_bytes().to_vec(), m.return_pk());
@@ -223,13 +250,37 @@ mod tests {
         //test to see if same key pair can be regenerated from ascii hex
         let a = ClassCrypto::new("alex", true);
     	let m = ClassCrypto::new_from_sk("megan", a.return_sk(), false).unwrap();
-        println!("{}",a);
-        println!("{}",m);
+        //println!("{}",a);
+        //println!("{}",m);
         let random_bytes: Vec<u8> = (0..1024).map(|_| { rand::random::<u8>() }).collect();
         
         let cipher = a.encrypt(random_bytes.to_vec(), m.return_pk());
         let recv = m.decrypt(&cipher, a.return_pk()).unwrap();
         
         assert!(random_bytes == recv);
+    }
+    #[test]
+    fn serialize_me() {
+        //test to see if me can be regenerated from ascii hex
+        let a = ClassCrypto::new("alex", true);
+        let me = convert_me_to_serializable(&a);
+    	let toml = toml::to_string(&me).unwrap();
+        dbg!(toml);
+    }
+    #[test]
+    fn serialize_instructor() {
+        //test to see instructor can be serialized
+        let a = ClassCrypto::new("alex", true);
+        let me = convert_instructor_to_serializable(&a);
+    	let toml = toml::to_string(&me).unwrap();
+        dbg!(toml);
+    }
+    #[test]
+    fn serialize_student() {
+        //test to see student can be serialized
+        let a = ClassCrypto::new("alex", true);
+        let me = convert_student_to_serializable(&a);
+    	let toml = toml::to_string(&me).unwrap();
+        dbg!(toml);
     }
 }

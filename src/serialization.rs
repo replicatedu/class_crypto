@@ -22,11 +22,11 @@ pub struct Students {
 
 //this class will be used to store the key material on the instructors machine or the students
 #[derive(Serialize,Deserialize, Debug)]
-struct Participant {
-    id: String,
-    pk: String,
-    sk: String,
-    instructor: bool
+pub struct Participant {
+    pub id: String,
+    pub pk: String,
+    pub sk: String,
+    pub instructor: bool
 }
 
 #[cfg(test)]
