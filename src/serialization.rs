@@ -35,22 +35,22 @@ mod tests {
     
     use std::fs::OpenOptions;
     use std::io::Write;
-//     fn write_file(filepath: &str, contents: &str) {
-//         match OpenOptions::new()
-//             .create(true)
-//             .write(true)
-//             .append(true)
-//             .open(filepath)
-//         {
-//             Ok(ref mut file) => {
-//                 file.set_len(0);
-//                 writeln!(file, "{}",contents).unwrap();
-//             }
-//             Err(err) => {
-//                 panic!("Failed to open log file: {}", err);
-//             }
-//         }
-//     }
+    fn write_file(filepath: &str, contents: &str) {
+        match OpenOptions::new()
+            .create(true)
+            .write(true)
+            .append(true)
+            .open(filepath)
+        {
+            Ok(ref mut file) => {
+                file.set_len(0).unwrap();
+                writeln!(file, "{}",contents).unwrap();
+            }
+            Err(err) => {
+                panic!("Failed to open log file: {}", err);
+            }
+        }
+    }
     
     #[test]
     fn deserialize_serialize() {
@@ -70,27 +70,7 @@ mod tests {
         pk = 'test_pk'
         "#).unwrap();
         dbg!(&config);
-//         assert_eq!(config.description, "this is a class description");
-//         assert_eq!(config.sk, None);
-//         assert_eq!(config.test.id, "test");
-//         assert_eq!(config.test.pk, "test_pk");
-//         assert_eq!(config.test.travis.as_ref().unwrap(), "yyyyyyyyyyyyyyyyy");
         let toml = toml::to_string(&config).unwrap();
-        //write_file("test.tmp",&toml)
-    }
-    #[test]
-    fn serialize() {
-//         let config = Class {
-//             ip: "127.0.0.1".to_string(),
-//             port: None,
-//             keys: Keys {
-//                 github: "xxxxxxxxxxxxxxxxx".to_string(),
-//                 travis: Some("yyyyyyyyyyyyyyyyy".to_string()),
-//             },
-//         };
-
-//         let toml = toml::to_string(&config).unwrap();
-//         dbg!(toml);
-    }
-    
+        write_file("test.tmp",&toml)
+    }    
 }

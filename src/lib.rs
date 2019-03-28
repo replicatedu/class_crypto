@@ -147,7 +147,7 @@ mod tests {
     use super::*;
     use std::str;
 	use sodiumoxide::crypto::box_;
-    use rand::Rng;
+    use rand;
     #[test]
     fn encrypt_decrypt() {
         let (ourpk, oursk) = box_::gen_keypair();
@@ -186,7 +186,7 @@ mod tests {
         let cipher = a.encrypt(msg.as_bytes().to_vec(), m.return_pk());
         let recv = m.decrypt(&cipher, a.return_pk()).unwrap();
         dbg!(str::from_utf8(&recv).unwrap());
-        //assert!(msg == recv);
+        assert!(msg == str::from_utf8(&recv).unwrap());
     }
     #[test]
     fn test_encrypt_message_to_self() {
