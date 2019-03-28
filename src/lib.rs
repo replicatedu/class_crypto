@@ -7,6 +7,11 @@ use sodiumoxide::crypto::box_;
 use sodiumoxide::crypto::box_::curve25519xsalsa20poly1305::{PUBLICKEYBYTES,NONCEBYTES};//,SECRETKEYBYTES};
 use sodiumoxide::crypto::box_::curve25519xsalsa20poly1305::Nonce;
 
+#[macro_use]
+extern crate serde_derive;
+
+pub mod serialization;
+
 //convert variable PublicKey u8 array reference into a constant sized array
 pub fn pk_convert(pk: &[u8]) -> [u8; PUBLICKEYBYTES] {
     let mut array = [0u8; PUBLICKEYBYTES];
@@ -73,13 +78,13 @@ impl ClassCrypto {
 
 
 
-    pub fn encrypt(&self, plaintext: &str, recipient_pk_str: String) -> String{
+    pub fn encrypt(&self, plaintext: Vec<u8>, recipient_pk_str: String) -> String{
 
         let recipient_pk = box_::PublicKey(pk_convert(&hex::decode(recipient_pk_str).unwrap()));
 
         let nonce = box_::gen_nonce();
         
-        let ciphertext = box_::seal(plaintext.as_bytes(), &nonce, &recipient_pk, &self.sk);
+        let ciphertext = box_::seal(&plaintext, &nonce, &recipient_pk, &self.sk);
         
         let mut enc_nonce = hex::encode(nonce);
         let enc_ciphertext = hex::encode(&ciphertext);
@@ -141,7 +146,7 @@ mod tests {
     use super::*;
     use std::str;
 	use sodiumoxide::crypto::box_;
-
+    use rand::Rng;
     #[test]
     fn encrypt_decrypt() {
         let (ourpk, oursk) = box_::gen_keypair();
@@ -177,7 +182,7 @@ mod tests {
         println!("{}",m);
         let msg = "i hate girls lacrosse";
 
-        let cipher = a.encrypt(msg, m.return_pk());
+        let cipher = a.encrypt(msg.as_bytes().to_vec(), m.return_pk());
         let recv = m.decrypt(&cipher, a.return_pk()).unwrap();
         dbg!(str::from_utf8(&recv).unwrap());
         //assert!(msg == recv);
@@ -191,7 +196,7 @@ mod tests {
         println!("{}",m);
         let msg = "i hate girls lacrosse";
 
-        let cipher = a.encrypt(msg, m.return_pk());
+        let cipher = a.encrypt(msg.as_bytes().to_vec(), m.return_pk());
         let recv = m.decrypt(&cipher, a.return_pk()).unwrap();
         dbg!(str::from_utf8(&recv).unwrap());
         //assert!(msg == recv);
@@ -206,11 +211,24 @@ mod tests {
         println!("{}",m);
         let msg = "i hate girls lacrosse";
 
-        let cipher = a.encrypt(msg, m.return_pk());
+        let cipher = a.encrypt(msg.as_bytes().to_vec(), m.return_pk());
         let _recv = match h.decrypt(&cipher, a.return_pk()){
             Err(_e) => assert!(true),
             Ok(_f) => assert!(false, "this should have failed")
         };
     }
-
+    #[test]
+    fn test_encrypt_decrypt_binary() {
+        //test to see if same key pair can be regenerated from ascii hex
+        let a = ClassCrypto::new("alex", true);
+    	let m = ClassCrypto::new_from_sk("megan", a.return_sk(), false).unwrap();
+        println!("{}",a);
+        println!("{}",m);
+        let random_bytes: Vec<u8> = (0..1024).map(|_| { rand::random::<u8>() }).collect();
+        
+        let cipher = a.encrypt(random_bytes.to_vec(), m.return_pk());
+        let recv = m.decrypt(&cipher, a.return_pk()).unwrap();
+        
+        assert!(random_bytes == recv);
+    }
 }
