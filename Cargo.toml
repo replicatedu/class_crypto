@@ -10,7 +10,7 @@ sodiumoxide = "0.2.1"
 hex = "0.3.2"
 serde_derive = "1.0"
 serde = "1.0"
-toml = "*"
+toml = "0.5.0"
 
 [dev-dependencies]
 rand = "*"

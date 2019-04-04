@@ -4,15 +4,15 @@ use term_painter::Color::*;
 use term_painter::ToStyle;
 
 use sodiumoxide::crypto::box_;
-use sodiumoxide::crypto::box_::curve25519xsalsa20poly1305::{PUBLICKEYBYTES,NONCEBYTES};//,SECRETKEYBYTES};
 use sodiumoxide::crypto::box_::curve25519xsalsa20poly1305::Nonce;
+use sodiumoxide::crypto::box_::curve25519xsalsa20poly1305::{NONCEBYTES, PUBLICKEYBYTES}; //,SECRETKEYBYTES};
 
 #[macro_use]
 extern crate serde_derive;
 extern crate toml;
 
 pub mod serialization;
-use serialization::{Class,Instructors,Students, Participant};
+use serialization::{Class, Instructors, Participant, Students};
 
 //convert variable PublicKey u8 array reference into a constant sized array
 pub fn pk_convert(pk: &[u8]) -> [u8; PUBLICKEYBYTES] {
@@ -32,7 +32,7 @@ pub fn nonce_convert(pk: &[u8]) -> [u8; NONCEBYTES] {
     array
 }
 
-pub fn convert_student_to_serializable(student: &ClassCrypto) -> Students{
+pub fn convert_student_to_serializable(student: &ClassCrypto) -> Students {
     let student = Students {
         id: student.id.to_string(),
         pk: student.return_pk(),
@@ -40,7 +40,7 @@ pub fn convert_student_to_serializable(student: &ClassCrypto) -> Students{
     student
 }
 
-pub fn convert_instructor_to_serializable(instructor: &ClassCrypto) -> Instructors{
+pub fn convert_instructor_to_serializable(instructor: &ClassCrypto) -> Instructors {
     let instructor = Instructors {
         id: instructor.id.to_string(),
         pk: instructor.return_pk(),
@@ -48,47 +48,51 @@ pub fn convert_instructor_to_serializable(instructor: &ClassCrypto) -> Instructo
     instructor
 }
 
-pub fn convert_me_to_serializable(me: &ClassCrypto) -> Participant{
+pub fn convert_me_to_serializable(me: &ClassCrypto) -> Participant {
     let me = Participant {
         id: me.id.to_string(),
         pk: me.return_pk(),
         sk: me.return_sk(),
-        instructor: me.instructor
+        instructor: me.instructor,
     };
     me
 }
 
 //holds data for instructor and students
 pub struct ClassCrypto {
-	id: String,
+    id: String,
     sk: box_::SecretKey,
-	pk: box_::PublicKey,
-    instructor: bool
+    pk: box_::PublicKey,
+    instructor: bool,
 }
 
 impl ClassCrypto {
     //constructs a new entity used for encrpytion
     pub fn new(student_id: &str, instructor: bool) -> ClassCrypto {
-        let (pk, sk) = box_::gen_keypair(); 
-		let cc = ClassCrypto {
+        let (pk, sk) = box_::gen_keypair();
+        let cc = ClassCrypto {
             id: String::from(student_id),
             sk,
-			pk,
-            instructor
+            pk,
+            instructor,
         };
         cc
     }
     //constructs a ClassCrypto instance from a string
-    pub fn new_from_sk(student_id: &str, sk_in: String,instructor: bool) -> Result<ClassCrypto, &'static str> {
+    pub fn new_from_sk(
+        student_id: &str,
+        sk_in: String,
+        instructor: bool,
+    ) -> Result<ClassCrypto, &'static str> {
         let sk_decoded = hex::decode(sk_in).unwrap();
         let sk = box_::SecretKey::from_slice(&sk_decoded).unwrap();
 
-        let pk = sk.public_key(); 
+        let pk = sk.public_key();
         let cc = ClassCrypto {
             id: String::from(student_id),
             sk,
-			pk,
-            instructor
+            pk,
+            instructor,
         };
         Ok(cc)
     }
@@ -104,45 +108,46 @@ impl ClassCrypto {
         return hex::encode(self.pk);
     }
 
-
-
-    pub fn encrypt(&self, plaintext: Vec<u8>, recipient_pk_str: String) -> String{
-
+    pub fn encrypt(&self, plaintext: Vec<u8>, recipient_pk_str: String) -> String {
         let recipient_pk = box_::PublicKey(pk_convert(&hex::decode(recipient_pk_str).unwrap()));
 
         let nonce = box_::gen_nonce();
-        
+
         let ciphertext = box_::seal(&plaintext, &nonce, &recipient_pk, &self.sk);
-        
+
         let mut enc_nonce = hex::encode(nonce);
         let enc_ciphertext = hex::encode(&ciphertext);
-      
+
         //prepends nones onto string to send as the message
         enc_nonce.push_str(&enc_ciphertext);
         enc_nonce
     }
 
-	pub fn decrypt(&self, ciphertext: &str, sender_pk_str: String) -> Result<Vec<u8>,()> {
-        let sender_pk_hex = match hex::decode(&sender_pk_str){
+    pub fn decrypt(&self, ciphertext: &str, sender_pk_str: String) -> Result<Vec<u8>, ()> {
+        let sender_pk_hex = match hex::decode(&sender_pk_str) {
             Err(_) => return Err(()),
-            Ok(f) => f
-        }; 
-        
+            Ok(f) => f,
+        };
+
         let sender_pk = box_::PublicKey(pk_convert(&sender_pk_hex));
-        
+
         let decoded_ciphertext = hex::decode(ciphertext).unwrap();
-        
+
         //seperate the nonce and the ciphertext
         let nonce = &decoded_ciphertext[0..NONCEBYTES];
         let ciphertext = &decoded_ciphertext[NONCEBYTES..];
 
-        let plaintext = match box_::open(&ciphertext, &Nonce(nonce_convert(nonce)), &sender_pk, &self.sk){
+        let plaintext = match box_::open(
+            &ciphertext,
+            &Nonce(nonce_convert(nonce)),
+            &sender_pk,
+            &self.sk,
+        ) {
             Err(_) => return Err(()),
-            Ok(f) => f
-        }; 
+            Ok(f) => f,
+        };
         Ok(plaintext)
     }
-
 }
 
 impl fmt::Display for ClassCrypto {
@@ -152,18 +157,21 @@ impl fmt::Display for ClassCrypto {
         // stream: `f`. Returns `fmt::Result` which indicates whether the
         // operation succeeded or failed. Note that `write!` uses syntax which
         // is very similar to `println!`.
-        if self.instructor{
+        if self.instructor {
             write!(
                 f,
                 "Instructor ID:\r\n\t{}\r\nPublicKey:\r\n\t{}\r\nPrivateKey:\r\n\t{}",
-                self.id, Yellow.paint(self.return_pk()), Red.paint(self.return_sk())
+                self.id,
+                Yellow.paint(self.return_pk()),
+                Red.paint(self.return_sk())
             )
         } else {
-
             write!(
                 f,
                 "Student ID:\r\n\t{}\r\nPublicKey:\r\n\t{}\r\nPrivateKey:\r\n\t{}",
-                self.id, Yellow.paint(self.return_pk()), Red.paint(self.return_sk())
+                self.id,
+                Yellow.paint(self.return_pk()),
+                Red.paint(self.return_sk())
             )
         }
     }
@@ -172,21 +180,20 @@ impl fmt::Display for ClassCrypto {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::str;
-	use sodiumoxide::crypto::box_;
     use rand;
+    use sodiumoxide::crypto::box_;
+    use std::str;
     #[test]
     fn encrypt_decrypt() {
         let (ourpk, oursk) = box_::gen_keypair();
-		
-        // normally theirpk is sent by the other party
-		let (theirpk, theirsk) = box_::gen_keypair();
-		let nonce = box_::gen_nonce();
-		let plaintext = b"some data";
-		let ciphertext = box_::seal(plaintext, &nonce, &theirpk, &oursk);
-		let their_plaintext = box_::open(&ciphertext, &nonce, &ourpk, &theirsk).unwrap();
-		assert!(plaintext == &their_plaintext[..]);
 
+        // normally theirpk is sent by the other party
+        let (theirpk, theirsk) = box_::gen_keypair();
+        let nonce = box_::gen_nonce();
+        let plaintext = b"some data";
+        let ciphertext = box_::seal(plaintext, &nonce, &theirpk, &oursk);
+        let their_plaintext = box_::open(&ciphertext, &nonce, &ourpk, &theirsk).unwrap();
+        assert!(plaintext == &their_plaintext[..]);
     }
     #[test]
     fn gen_keys() {
@@ -197,15 +204,14 @@ mod tests {
     fn test_gen_from_hex_keys() {
         //test to see if same key pair can be regenerated from ascii hex
         let a = ClassCrypto::new("alex", true);
-    	let a2 = ClassCrypto::new_from_sk("alex2", a.return_sk(), false).unwrap();
+        let a2 = ClassCrypto::new_from_sk("alex2", a.return_sk(), false).unwrap();
         assert!(a.return_pk() == a2.return_pk());
-        
     }
-   #[test]
+    #[test]
     fn test_encrypt_message() {
         //test to see if same key pair can be regenerated from ascii hex
         let a = ClassCrypto::new("alex", true);
-    	let m = ClassCrypto::new("megan", false);
+        let m = ClassCrypto::new("megan", false);
         //println!("{}",a);
         //println!("{}",m);
         let msg = "i hate girls lacrosse";
@@ -219,7 +225,7 @@ mod tests {
     fn test_encrypt_message_to_self() {
         //test to see if same key pair can be regenerated from ascii hex
         let a = ClassCrypto::new("alex", true);
-    	let m = ClassCrypto::new_from_sk("megan", a.return_sk(), false).unwrap();
+        let m = ClassCrypto::new_from_sk("megan", a.return_sk(), false).unwrap();
         //println!("{}",a);
         //println!("{}",m);
         let msg = "i hate girls lacrosse";
@@ -233,30 +239,30 @@ mod tests {
     fn test_fail_decrypt() {
         //test to see if same key pair can be regenerated from ascii hex
         let a = ClassCrypto::new("alex", true);
-    	let m = ClassCrypto::new_from_sk("megan", a.return_sk(), false).unwrap();
+        let m = ClassCrypto::new_from_sk("megan", a.return_sk(), false).unwrap();
         let h = ClassCrypto::new("hallie", true);
         //println!("{}",a);
         //println!("{}",m);
         let msg = "i hate girls lacrosse";
 
         let cipher = a.encrypt(msg.as_bytes().to_vec(), m.return_pk());
-        let _recv = match h.decrypt(&cipher, a.return_pk()){
+        let _recv = match h.decrypt(&cipher, a.return_pk()) {
             Err(_e) => assert!(true),
-            Ok(_f) => assert!(false, "this should have failed")
+            Ok(_f) => assert!(false, "this should have failed"),
         };
     }
     #[test]
     fn test_encrypt_decrypt_binary() {
         //test to see if same key pair can be regenerated from ascii hex
         let a = ClassCrypto::new("alex", true);
-    	let m = ClassCrypto::new_from_sk("megan", a.return_sk(), false).unwrap();
+        let m = ClassCrypto::new_from_sk("megan", a.return_sk(), false).unwrap();
         //println!("{}",a);
         //println!("{}",m);
-        let random_bytes: Vec<u8> = (0..1024).map(|_| { rand::random::<u8>() }).collect();
-        
+        let random_bytes: Vec<u8> = (0..1024).map(|_| rand::random::<u8>()).collect();
+
         let cipher = a.encrypt(random_bytes.to_vec(), m.return_pk());
         let recv = m.decrypt(&cipher, a.return_pk()).unwrap();
-        
+
         assert!(random_bytes == recv);
     }
     #[test]
@@ -264,7 +270,7 @@ mod tests {
         //test to see if me can be regenerated from ascii hex
         let a = ClassCrypto::new("alex", true);
         let me = convert_me_to_serializable(&a);
-    	let toml = toml::to_string(&me).unwrap();
+        let toml = toml::to_string(&me).unwrap();
         dbg!(toml);
     }
     #[test]
@@ -272,7 +278,7 @@ mod tests {
         //test to see instructor can be serialized
         let a = ClassCrypto::new("alex", true);
         let me = convert_instructor_to_serializable(&a);
-    	let toml = toml::to_string(&me).unwrap();
+        let toml = toml::to_string(&me).unwrap();
         dbg!(toml);
     }
     #[test]
@@ -280,7 +286,7 @@ mod tests {
         //test to see student can be serialized
         let a = ClassCrypto::new("alex", true);
         let me = convert_student_to_serializable(&a);
-    	let toml = toml::to_string(&me).unwrap();
+        let toml = toml::to_string(&me).unwrap();
         dbg!(toml);
     }
 }
