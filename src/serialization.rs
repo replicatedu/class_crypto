@@ -34,7 +34,7 @@ pub struct Participant {
 pub struct Message {
     pub id: String,
     pub pk: String,
-    pub message: String
+    pub msg: String
 }
 
 

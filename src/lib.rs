@@ -12,7 +12,7 @@ extern crate serde_derive;
 extern crate toml;
 
 pub mod serialization;
-use serialization::{Class, Instructors, Participant, Students};
+use serialization::{Class, Instructors, Participant, Students, Message};
 
 //convert variable PublicKey u8 array reference into a constant sized array
 pub fn pk_convert(pk: &[u8]) -> [u8; PUBLICKEYBYTES] {
@@ -123,6 +123,18 @@ impl ClassCrypto {
         enc_nonce
     }
 
+    pub fn encrypt_to_toml(&self, plaintext: Vec<u8>, recipient_pk_str: String) -> String {
+        let msg = self.encrypt(plaintext,recipient_pk_str);
+        let id = &self.id;
+        let pk = self.return_pk();
+        let emsg = Message{
+            id: id.to_string(),
+            pk: pk,
+            msg: msg
+        };
+        toml::to_string(&emsg).unwrap()
+    }
+
     pub fn decrypt(&self, ciphertext: &str, sender_pk_str: String) -> Result<Vec<u8>, ()> {
         let sender_pk_hex = match hex::decode(&sender_pk_str) {
             Err(_) => return Err(()),
@@ -147,6 +159,11 @@ impl ClassCrypto {
             Ok(f) => f,
         };
         Ok(plaintext)
+    }
+
+    pub fn decrypt_from_toml(&self,toml_text: &str) -> Result<Vec<u8>, ()>{
+        let msg:Message = toml::from_str(&toml_text).unwrap();
+        self.decrypt(&msg.msg, msg.pk)
     }
 }
 
@@ -288,5 +305,19 @@ mod tests {
         let me = convert_student_to_serializable(&a);
         let toml = toml::to_string(&me).unwrap();
         dbg!(toml);
+    }
+    #[test]
+    fn encrypt_toml() {
+        //test to see student can be serialized
+        let a = ClassCrypto::new("alex", true);
+        let m = ClassCrypto::new("megan", false);
+        //println!("{}",a);
+        //println!("{}",m);
+        let msg = "i hate girls lacrosse";
+
+        let cipher_toml = a.encrypt_to_toml(msg.as_bytes().to_vec(), m.return_pk());
+        let uncipher_toml = m.decrypt_from_toml(&cipher_toml);
+        dbg!(cipher_toml);
+        dbg!(str::from_utf8(&uncipher_toml.unwrap()).unwrap());
     }
 }
