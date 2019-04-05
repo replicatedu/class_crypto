@@ -40,12 +40,20 @@ pub fn convert_student_to_serializable(student: &ClassCrypto) -> Students {
     student
 }
 
+pub fn student_to_str(obj: Students)-> String{
+    toml::to_string(&obj).unwrap()
+}
+
 pub fn convert_instructor_to_serializable(instructor: &ClassCrypto) -> Instructors {
     let instructor = Instructors {
         id: instructor.id.to_string(),
         pk: instructor.return_pk(),
     };
     instructor
+}
+
+pub fn instructor_to_str(obj: Instructors)-> String{
+    toml::to_string(&obj).unwrap()
 }
 
 pub fn convert_me_to_serializable(me: &ClassCrypto) -> Participant {
@@ -56,6 +64,10 @@ pub fn convert_me_to_serializable(me: &ClassCrypto) -> Participant {
         instructor: me.instructor,
     };
     me
+}
+
+pub fn participant_to_str(obj: Participant)-> String{
+    toml::to_string(&obj).unwrap()
 }
 
 //holds data for instructor and students
