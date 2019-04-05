@@ -29,6 +29,15 @@ pub struct Participant {
     pub instructor: bool
 }
 
+//this class will be used to store the key material on the instructors machine or the students
+#[derive(Serialize,Deserialize, Debug)]
+pub struct Message {
+    pub id: String,
+    pub pk: String,
+    pub message: String
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
