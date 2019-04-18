@@ -96,8 +96,8 @@ impl ClassCrypto {
         sk_in: String,
         instructor: bool,
     ) -> Result<ClassCrypto, &'static str> {
-        let sk_decoded = hex::decode(sk_in).unwrap();
-        let sk = box_::SecretKey::from_slice(&sk_decoded).unwrap();
+        let sk_decoded = hex::decode(sk_in).expect("hex decoding failed");
+        let sk = box_::SecretKey::from_slice(&sk_decoded).expect("secret key invalid");
 
         let pk = sk.public_key();
         let cc = ClassCrypto {
@@ -121,7 +121,7 @@ impl ClassCrypto {
     }
 
     pub fn encrypt(&self, plaintext: Vec<u8>, recipient_pk_str: String) -> String {
-        let recipient_pk = box_::PublicKey(pk_convert(&hex::decode(recipient_pk_str).unwrap()));
+        let recipient_pk = box_::PublicKey(pk_convert(&hex::decode(recipient_pk_str).expect("encryption failed")));
 
         let nonce = box_::gen_nonce();
 
@@ -144,7 +144,7 @@ impl ClassCrypto {
             pk: pk,
             msg: msg
         };
-        toml::to_string(&emsg).unwrap()
+        toml::to_string(&emsg).expect("toml encoding failed")
     }
 
     pub fn decrypt(&self, ciphertext: &str, sender_pk_str: String) -> Result<Vec<u8>, ()> {
@@ -155,7 +155,7 @@ impl ClassCrypto {
 
         let sender_pk = box_::PublicKey(pk_convert(&sender_pk_hex));
 
-        let decoded_ciphertext = hex::decode(ciphertext).unwrap();
+        let decoded_ciphertext = hex::decode(ciphertext).expect("hex decoding failed");
 
         //seperate the nonce and the ciphertext
         let nonce = &decoded_ciphertext[0..NONCEBYTES];
@@ -174,7 +174,7 @@ impl ClassCrypto {
     }
 
     pub fn decrypt_from_toml(&self,toml_text: &str) -> Result<Vec<u8>, ()>{
-        let msg:Message = toml::from_str(&toml_text).unwrap();
+        let msg:Message = toml::from_str(&toml_text).expect("toml decoding failed");
         self.decrypt(&msg.msg, msg.pk)
     }
 }
